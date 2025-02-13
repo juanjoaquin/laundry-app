@@ -1,50 +1,19 @@
-# React + TypeScript + Vite
+# Laundry App: Aplicación de Lavanderia, con panel de usuario y gestión de administrador
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Proyecto Full stack realizado con React js, TypeScript para el frontend, Laravel para el backend y MySQL para la base de datos.
+Para la validación utilizo JWT aplicandolo desde el backend, y para almacenarlo utilizó LocalStorage. Cuando un usuario realizá un logout, este token es borrado. 
+Para los roles lo hicé de forma nátiva desde Laravel, sin utilizar librerias o extensiones, lo hicé como un Middleware, mientras que desde el front, lo autorizó a través de rutas.
+Del lado del usuario es parecido a un "e-commerce" donde puede seleccionar la ropa para poder lavar, donde puede borrar los productos, puede cancelar ordenes en un estado de "pending".
+Mientras que del lado del administrador, esté se encarga de gestionar las ordenes realizadas por los usuarios y de la lógistica de la entrega de la ropa.
+ 
+# Pasos a seguir para utilizarlo
 
-Currently, two official plugins are available:
+1. Clonar el repositorio
+2. Instalar Vite usando React + TypeScript
+3. Una vez creado Laravel con Composer realizar las migraciones con `php artisan migrate`
+4. Ejecutar `npm run dev` para la copilación del frontend.
+5. Ejecutar `php artisan serve` para levantar el backend. 
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+# Imagenes del proyecto
 
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type aware lint rules:
-
-- Configure the top-level `parserOptions` property like this:
-
-```js
-export default tseslint.config({
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
-```
-
-- Replace `tseslint.configs.recommended` to `tseslint.configs.recommendedTypeChecked` or `tseslint.configs.strictTypeChecked`
-- Optionally add `...tseslint.configs.stylisticTypeChecked`
-- Install [eslint-plugin-react](https://github.com/jsx-eslint/eslint-plugin-react) and update the config:
-
-```js
-// eslint.config.js
-import react from 'eslint-plugin-react'
-
-export default tseslint.config({
-  // Set the react version
-  settings: { react: { version: '18.3' } },
-  plugins: {
-    // Add the react plugin
-    react,
-  },
-  rules: {
-    // other rules...
-    // Enable its recommended rules
-    ...react.configs.recommended.rules,
-    ...react.configs['jsx-runtime'].rules,
-  },
-})
-```
+![1](https://i.imgur.com/lQozjAK.jpeg)
