@@ -11,6 +11,7 @@ use App\Http\Controllers\OrderController;
 use App\Http\Controllers\PedidoController;
 use App\Http\Controllers\RatingController;
 use App\Http\Controllers\RopaController;
+use App\Models\Category;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -37,13 +38,16 @@ Route::group(['middleware' => 'api','prefix' => 'auth'], function ($router) {
     Route::post('login', [AuthController::class, 'login']);
     Route::post('logout', [AuthController::class, 'logout']);
     Route::post('refresh', [AuthController::class, 'refresh']);
-    Route::post('me', [AuthController::class, 'me']);
+    Route::get('me', [AuthController::class, 'me']);
 });
 
 //Route auth para users
 Route::group(['middleware' => 'api'], function () {
-    Route::get('clothes', [ClotheController::class, 'index']); // Traer Orden de Ropa por User
-    Route::post('clothes', [ClotheController::class, 'store']); // NO SIRVE
+    
+    Route::get('clothes/delivery', [ClotheController::class, 'index']); // Traer Orden de Ropa por User
+    Route::get('clothes', [ClotheController::class, 'getCartClothes']); // Traer Orden con Delivery, e items por ID
+    Route::get('clothes/categories', [CategoryController::class, 'index']);
+    // Route::post('clothes', [ClotheController::class, 'store']); // NO SIRVE
     Route::get('clothes/{id}', [ClotheController::class, 'getClotheById']); // Traer ropa por ID
     Route::get('clothes/category/{name}', [ClotheController::class, 'getClothesByCategory']); // Traer ropa por Categoria
 
@@ -59,18 +63,28 @@ Route::group(['middleware' => 'api'], function () {
     Route::get('historial', [OrderController::class, 'getOrderHistory']); //Traerse el historial
     Route::post('orders/{orderId}/cancel', [ClotheController::class, 'cancelOrder']); // Cancelar orden en "pending"
 
+    Route::delete('cart/clear', [ClotheController::class, 'clearCart']);
+
+  
+
+
 });
 
 Route::group(['middleware' => ['auth', 'admin']], function () {
     Route::get('admin/orders', [AdminController::class, 'getOrderHistory']); //Obtener todas ordenes de los users
+    Route::get('admin/orders/{id}', [AdminController::class, 'getOrder']);
     Route::put('admin/orders/{id}/status', [AdminController::class, 'updateOrderStatus']); // Actualizar order status
     Route::put('admin/deliveries/{id}/status', [AdminController::class, 'updateDeliveryStatus']); // Actualizar delivery status
     Route::get('admin/orders-pending', [AdminController::class, 'getOrdersPending']); // Todas las ordenes Pending
     Route::delete('admin/delete-user/{id}', [AdminController::class, 'deleteUser']); // Deletear usuarios
-    Route::get('admin/user/{id}', [AdminController::class, 'showUser']); // Mostrar user por ID
+    Route::get('admin/users/{id}', [AdminController::class, 'showUser']); // Mostrar user por ID
+    Route::get('admin/users', [AdminController::class, 'getAllUsers']); // Traer all users
+    Route::post('admin/categories/create-category', [CategoryController::class, 'store']);
+
+    Route::put('admin/clothes/update-price/{id}', [AdminController::class, 'updatePriceClothe']); // Updatear el precio de la Categoria/ropa
+    Route::delete('admin/clothes/delete-category/{id}', [AdminController::class, 'destroyCategory']);
+
+    
+    Route::put('clothes/categories/{id}', [ClotheController::class, 'updateImage']); //Update image
 });
 
-//"Seeder"
-Route::get('users', [UserController::class, 'index']);
-Route::get('categories', [CategoryController::class, 'index']);
-Route::post('categories/create-category', [CategoryController::class, 'store']);

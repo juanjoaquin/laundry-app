@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Category;
 use App\Models\Delivery;
 use App\Models\Order;
 use App\Models\User;
@@ -56,6 +57,49 @@ class AdminController extends Controller
         ], 200);
     }
 
+    public function updatePriceClothe(Request $request, string $id)
+    {
+        $this->authorize('isAdmin');
+
+        $request->validate([
+            'price' => 'required|integer'
+        ]);
+
+        $CategoryPrice = Category::find($id);
+
+        if(!$CategoryPrice) {
+            return response()->json([
+                'message' => 'Category not found'
+            ], 404);
+        }
+
+        $CategoryPrice->price = $request->price;
+        $CategoryPrice->save();
+
+        return response()->json([
+            'message' => 'Price updated successfully',
+            'category' => $CategoryPrice
+        ], 200);
+    }
+
+    public function destroyCategory(string $id)
+    {
+        $category = Category::find($id);
+
+        if(!$category) {
+            return response()->json([
+                'message' => 'Category not found'
+            ], 404);
+        }
+
+        $category->delete();
+
+        return response()->json([
+            'message' => 'Category deleted succesfully'
+        ], 200);
+    }
+
+
     public function updateDeliveryStatus(Request $request, string $id)
     {
         $this->authorize('isAdmin');
@@ -80,6 +124,34 @@ class AdminController extends Controller
             'delivery' => $delivery
         ], 200);
     }
+    
+    public function getOrder(string $id)
+    {
+        $order = Order::with(['items', 'delivery'])->find($id);
+
+        if(!$order) {
+            return response()->json([
+                'message' => 'Cannot find Order'
+            ], 404);
+        }
+
+        return response()->json($order, 200);
+    }
+
+    public function getAllUsers()
+    {
+        $users = User::all();
+        
+        if($users->isEmpty()) {
+            return response()->json([
+                'message' => 'Users not found'
+            ], 404);
+        }
+
+        return response()->json([
+            'users' => $users
+        ], 200);
+    }
 
    
     public function getOrdersPending()
@@ -100,26 +172,30 @@ class AdminController extends Controller
         ], 200);
     }
 
+
     public function deleteUser(string $id)
     {
         $findUser = User::find($id);
-
-        if(!$findUser) {
+    
+        if (!$findUser) {
             return response()->json([
                 'message' => 'User not found'
             ], 404);
         }
-
+    
+        $findUser->orders()->delete(); 
+    
         $findUser->delete();
-
+    
         return response()->json([
-            'message' => 'User has been deleted succesfully'
+            'message' => 'User has been deleted successfully'
         ], 200);
     }
+    
 
     public function showUser(string $id)
     {
-        $user = User::find($id);
+        $user = User::with('orders')->find($id);
 
         if(!$user) {
             return response()->json([

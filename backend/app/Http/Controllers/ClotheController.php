@@ -12,7 +12,7 @@ use Illuminate\Http\Request;
 class ClotheController extends Controller
 {
 
-    public function index()
+    public function getCartClothes()
     {
         $user = auth()->user();
 
@@ -20,7 +20,28 @@ class ClotheController extends Controller
             return response()->json(['User not authenticated'], 401);
         }
 
-        $clothes = Order::where('user_id', $user->id)->with(['payments' ,'delivery'])->get();
+        $clothes = Order::where('user_id', $user->id)->with('items.clothe')->get();
+
+        if ($clothes->isEmpty()) {
+            return response()->json([
+                'message' => 'Aún no has agregado ropa al carrito '
+            ], 404);
+        }
+
+        return response()->json([
+            'clothes' => $clothes
+        ], 200);
+    }
+
+    public function index() // Es el mismo que getCartClothes()
+    {
+        $user = auth()->user();
+
+        if (!$user) {
+            return response()->json(['User not authenticated'], 401);
+        }
+
+        $clothes = Order::where('user_id', $user->id)->with(['payments', 'delivery', 'items.clothe'])->get();
 
         if ($clothes->isEmpty()) {
             return response()->json([
@@ -76,77 +97,31 @@ class ClotheController extends Controller
     }
 
 
-    public function store(Request $request) // NO SIRVE
+    public function updateImage(Request $request, string $id)
     {
-        $user = auth()->user();
+        $validate = $request->validate([
+            'image' => 'required|string|max:255'
+        ]);
 
-        if (!$user) {
-            return response()->json(['User not authenticated'], 401);
+        $category = Category::find($id);
+
+        if (!$category) {
+            return response()->json([
+                'message' => 'Cannot find Category'
+            ], 404);
         }
 
-        $validated = $request->validate([
-            'category_id' => 'required|exists:categories,id',
-            'description' => 'nullable|string'
-        ]);
-
-        $shopClothe = Clothe::create([
-            'category_id' => $validated['category_id'],
-            'description' => $validated['description'],
-            'user_id' => $user->id
-        ]);
+        $category->image = $validate['image'];
+        $category->save();
 
         return response()->json([
-            'message' => 'Ropa agregada al carrito',
-            'clothes' => $shopClothe
-        ], 201);
-    }
-
-    public function addToCart(Request $request) // Pasar a OrderController
-    {
-        $user = auth()->user();
-
-        if (!$user) {
-            return response()->json(['User not authenticated'], 401);
-        }
-
-        $validated = $request->validate([
-            'clothes_id' => 'required|exists:clothes,id',
-            'quantity' => 'required|integer|min:1'
-        ]);
-
-        $order = Order::firstOrCreate(
-            ['user_id' => $user->id, 'status' => 'pending']
-        );
-
-        $orderItem = OrderItem::where('order_id', $order->id)->where('clothes_id', $validated['clothes_id'])->first();
-
-        if ($orderItem) {
-            $orderItem->quantity += $validated['quantity'];
-            $orderItem->subtotal = $orderItem->quantity * $orderItem->price_per_unit;
-            $orderItem->save();
-        } else {
-            $clothe = Clothe::findOrFail($validated['clothes_id']);
-            $pricePerUnit = $clothe->category->price;
-
-            OrderItem::create([
-                'order_id' => $order->id,
-                'clothes_id' => $validated['clothes_id'],
-                'quantity' => $validated['quantity'],
-                'price_per_unit' => $pricePerUnit,
-                'subtotal' => $validated['quantity'] * $pricePerUnit,
-            ]);
-        }
-
-        $order->total_amount = $order->items->sum('subtotal');
-        $order->save();
-
-        return response()->json([
-            'message' => 'Item added to cart',
-            'order' => $order->load('items.clothe'),
+            'message' => 'Category image updated successfully',
+            'category' => $category
         ], 200);
     }
 
-    public function removeFromCartByOrderId(Request $request, $orderId) // Pasar a OrderController
+
+    public function addToCart(Request $request) // Pasar a Order Controller
     {
         $user = auth()->user();
 
@@ -154,26 +129,76 @@ class ClotheController extends Controller
             return response()->json(['message' => 'User not authenticated'], 401);
         }
 
+        
         $validated = $request->validate([
-            'clothes_id' => 'required|exists:clothes,id',
+            'category_id' => 'required|exists:categories,id', 
+            'quantity' => 'required|integer|min:1',
         ]);
 
-        $order = Order::where('id', $orderId)
-            ->where('user_id', $user->id)
-            ->where('status', 'pending') 
+        
+        $category = Category::findOrFail($validated['category_id']);
+
+        
+        $clothe = Clothe::firstOrCreate([
+            'category_id' => $validated['category_id'],
+            'user_id' => $user->id,
+        ]);
+
+        
+        $order = Order::firstOrCreate(
+            ['user_id' => $user->id, 'status' => 'pending']
+        );
+
+        
+        $orderItem = OrderItem::where('order_id', $order->id)
+            ->where('clothes_id', $clothe->id) 
             ->first();
 
-        if (!$order) {
-            return response()->json(['message' => 'Order not found or cannot be modified'], 404);
+        if ($orderItem) {
+            $orderItem->quantity += $validated['quantity'];
+            $orderItem->subtotal = $orderItem->quantity * $category->price;
+            $orderItem->save();
+        } else {
+            
+            OrderItem::create([
+                'order_id' => $order->id,
+                'clothes_id' => $clothe->id, 
+                'quantity' => $validated['quantity'],
+                'price_per_unit' => $category->price,
+                'subtotal' => $validated['quantity'] * $category->price,
+            ]);
         }
 
-        $orderItem = OrderItem::where('order_id', $order->id)
-            ->where('clothes_id', $validated['clothes_id'])
-            ->first();
+        
+        $order->total_amount = $order->items->sum('subtotal');
+        $order->save();
+
+        
+        return response()->json([
+            'message' => 'Item added to cart',
+            'order' => $order->load('items.clothe.category'), 
+        ], 200);
+    }
+
+
+
+
+    public function removeFromCartByOrderId($orderItemId)
+    {
+        $user = auth()->user();
+
+        if (!$user) {
+            return response()->json(['message' => 'User not authenticated'], 401);
+        }
+
+        $orderItem = OrderItem::find($orderItemId);
 
         if (!$orderItem) {
-            return response()->json(['message' => 'Item not found in this order'], 404);
+            return response()->json(['message' => 'Item not found in cart'], 404);
         }
+
+        
+        $order = $orderItem->order;
 
         $orderItem->delete();
 
@@ -182,11 +207,13 @@ class ClotheController extends Controller
 
         return response()->json([
             'message' => 'Item removed from cart',
+            'removed_item' => $orderItem,  
             'order' => $order->load('items.clothe'), 
         ], 200);
     }
 
-    public function createPayment(Request $request, $orderId) // Pasar a PaymentController
+
+    public function createPayment(Request $request, $orderId) 
     {
         $user = auth()->user();
 
@@ -204,25 +231,28 @@ class ClotheController extends Controller
         }
 
         $validated = $request->validate([
-            'amount' => 'required|numeric|min:1', // Changed to numeric to handle decimals
+            'amount' => 'required|integer|min:1', 
+            'number_card' => 'required|string|min:1', 
+            'code_security' => 'required|string|min:1', 
+            'name_card' => 'required|string|min:1', 
             'payment_method' => 'required|string',
         ]);
 
-        // Convert both values to float for comparison
         if (floatval($validated['amount']) != floatval($order->total_amount)) {
             return response()->json(['message' => 'Amount invalid'], 400);
         }
 
-        // Create payment
         $payment = Payment::create([
             'order_id' => $order->id,
             'amount' => $validated['amount'],
+            'number_card' => $validated['number_card'],
+            'name_card' => $validated['name_card'],
+            'code_security' => $validated['code_security'],
             'payment_method' => $validated['payment_method'],
             'payment_status' => 'completed',
         ]);
 
-        // Update order status
-        $order->update(['status' => 'processed']); // Changed to 'processed' to match your enum
+        $order->update(['status' => 'processed']); 
 
         $order->delivery->update(['delivery_status' => 'in_transit']);
 
@@ -238,7 +268,7 @@ class ClotheController extends Controller
     {
         $user = auth()->user();
 
-        if(!$user) {
+        if (!$user) {
             return response()->json([
                 'message' => 'User not authenticated'
             ], 401);
@@ -257,5 +287,26 @@ class ClotheController extends Controller
             'message' => 'Order cancelled',
             'order' => $order
         ], 200);
+    }
+
+
+    public function clearCart(Request $request)
+    {
+        $user = auth()->user();
+
+        if (!$user) {
+            return response()->json(['message' => 'User not authenticated'], 401);
+        }
+
+        
+        $order = Order::where('user_id', $user->id)->where('status', 'pending')->first();
+
+        if ($order) {
+            
+            $order->items()->delete();
+            $order->update(['total_amount' => 0]);
+        }
+
+        return response()->json(['message' => 'Carrito limpiado con éxito']);
     }
 }
