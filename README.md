@@ -17,3 +17,23 @@ Mientras que del lado del administrador, esté se encarga de gestionar las orden
 # Imagenes del proyecto
 
 ![1](https://i.imgur.com/lQozjAK.jpeg)
+
+![2](https://i.imgur.com/vpveSx7.jpeg)
+
+![3](https://i.imgur.com/zXq195o.jpeg)
+
+![4](https://i.imgur.com/ERCXFM8.jpeg)
+
+![5](https://i.imgur.com/AB3Fhrz.jpeg)
+
+![6](https://i.imgur.com/kuOJSZP.jpeg)
+
+![7](https://i.imgur.com/B1V0xBT.jpeg)
+
+![8](https://i.imgur.com/iaMHEo4.jpeg)
+
+![9](https://i.imgur.com/kUlfesS.jpeg)
+
+![10](https://i.imgur.com/R6YpfuT.jpeg)
+
+![11](https://i.imgur.com/9Br9dhi.jpeg)
